@@ -54,6 +54,7 @@ class Extraction:
             experiment_subject:str='membrane',
             use_Network:str='U-Net',
             color:str='RGB',
+            blend:str='concatenate',
             gradation:bool=True,
             start_num:int=0,
             num_epochs:int=40,
@@ -88,6 +89,10 @@ class Extraction:
         ### 使用色空間(self.use_list_lengthが3または9の場合、RGB, HSV)
         self.color = color
         assert self.color in ['RGB', 'HSV'], f'使用色空間が不正です。color : {self.color}'
+
+        ### 画像の結合方法(concatenate, alpha)
+        self.blend = blend
+        assert self.blend in ['concatenate', 'alpha'], f'画像の結合方法が不正です。blend : {self.blend}'
 
         ### 細胞膜の正解画像の膨張時にグラデーションにするか、しないか
         self.gradation = gradation
@@ -472,7 +477,7 @@ class Extraction:
             self.scaler = GradScaler()
 
         # Data loader
-        self.dataloader = get_dataloader(self.train_path_list, self.use_list, self.color, self.batch_size, num_workers=2, isShuffle=True, pin_memory=True)
+        self.dataloader = get_dataloader(self.train_path_list, self.use_list, self.color, batch_size=self.batch_size, num_workers=2, isShuffle=True, pin_memory=True)
 
         # Training
         for epoch in range(self.num_epochs):
