@@ -55,6 +55,7 @@ class Extraction:
             use_Network:str='U-Net',
             color:str='RGB',
             blend:str='concatenate',
+            blend_particle_size:float=0.1,
             gradation:bool=True,
             start_num:int=0,
             num_epochs:int=40,
@@ -93,6 +94,9 @@ class Extraction:
         ### 画像の結合方法(concatenate, alpha)
         self.blend = blend
         assert self.blend in ['concatenate', 'alpha'], f'画像の結合方法が不正です。blend : {self.blend}'
+        if self.blend == 'alpha':
+            #### alphaブレンドの粒度
+            self.blend_particle_size = blend_particle_size
 
         ### 細胞膜の正解画像の膨張時にグラデーションにするか、しないか
         self.gradation = gradation
@@ -227,15 +231,27 @@ class Extraction:
         ####################################################################################################################
         # パターン数の計算
         # 2のuse_list_length乗から全て使用しない1パターンを引いた値
-        self.img_pattern = 2 ** self.use_list_length -1
-        self.use_lists = [self.get_use_list(n+1, self.use_list_length) for n in range(self.img_pattern)]
-        #if self.use_list_length==3:
-        #>> self.use_lists = [[1, 0, 0], [0, 1, 0], [1, 1, 0], [0, 0, 1], [1, 0, 1], [0, 1, 1], [1, 1, 1]]
-        #>> self.use_lists[n] =[明視野の使用有無(0:使用しない, 1:使用), 暗視野の使用有無, 位相差の使用有無]
-        #if self.use_list_length==9:
-        #>> self.use_lists[n] =[明R(H), 明G(S), 明B(V), 暗R(H), 暗G(S), 暗B(V), 位R(H), 位G(S), 位B(V)]
-        #if self.use_list_length==18:
-        #>> self.use_lists[n] =[明R, 明G, 明B, 暗R, 暗G, 暗B, 位R, 位G, 位B, 明H, 明S, 明V, 暗H, 暗S, 暗V, 位H, 位S, 位V]
+        if self.blend == 'concatenate':
+            self.img_pattern = 2 ** self.use_list_length -1
+            self.use_lists = [self.get_use_list(n+1, self.use_list_length) for n in range(self.img_pattern)]
+            #if self.use_list_length==3:
+            #>> self.use_lists = [[1, 0, 0], [0, 1, 0], [1, 1, 0], [0, 0, 1], [1, 0, 1], [0, 1, 1], [1, 1, 1]]
+            #>> self.use_lists[n] =[明視野の使用有無(0:使用しない, 1:使用), 暗視野の使用有無, 位相差の使用有無]
+            #if self.use_list_length==9:
+            #>> self.use_lists[n] =[明R(H), 明G(S), 明B(V), 暗R(H), 暗G(S), 暗B(V), 位R(H), 位G(S), 位B(V)]
+            #if self.use_list_length==18:
+            #>> self.use_lists[n] =[明R, 明G, 明B, 暗R, 暗G, 暗B, 位R, 位G, 位B, 明H, 明S, 明V, 暗H, 暗S, 暗V, 位H, 位S, 位V]
+        elif self.blend == 'alpha':
+            self.use_lists = []
+            self.rate_dict = {}
+            exp_num = 1
+            for bf_rate in range(0, 1+self.blend_particle_size, self.blend_particle_size):
+                for df_rate in range(0, 1-bf_rate+self.blend_particle_size, self.blend_particle_size):
+                    self.use_lists.append([bf_rate, df_rate, 1-bf_rate-df_rate])
+                    self.rate_dict[f'exp{exp_num:04d}'] = [bf_rate, df_rate, 1-bf_rate-df_rate]
+                    exp_num += 1
+            self.save_json(f'{self.log_folder}rate_dict.json', self.rate_dict)
+            self.use_list_length = len(self.use_lists)
 
         self.data_set_folder_path_list = get_file_paths(self.train_data_folder)
         #>> self.data_set_folder_path_list = ['{{self.default_path}}/train_data/pathological_specimen_01', '{{self.default_path}}/train_data/pathological_specimen_02', '{{self.default_path}}/train_data/pathological_specimen_03', '{{self.default_path}}/train_data/pathological_specimen_04']
@@ -533,7 +549,7 @@ class Extraction:
                 img_path_list.append(f'{img_path}/x/{img_name}.png')
 
             self.model.eval()
-            img = get_image(img_path_list, self.use_list, self.color)
+            img = get_image(img_path_list, self.use_list, self.color, self.blend)
             img = img.to(self.device)
 
             with torch.no_grad():
