@@ -254,6 +254,7 @@ class Extraction:
                     if 0<=ph_rate<=1:
                         self.use_lists.append([bf_rate, df_rate, ph_rate])
                         self.rate_dict[f'exp{exp_num:04d}'] = [bf_rate, df_rate, ph_rate]
+                        exp_num += 1
             self.save_json(f'{self.log_folder}rate_dict.json', self.rate_dict)
             self.img_pattern = len(self.use_lists)
 
