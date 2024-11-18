@@ -255,7 +255,7 @@ class Extraction:
                         self.use_lists.append([bf_rate, df_rate, ph_rate])
                         self.rate_dict[f'exp{exp_num:04d}'] = [bf_rate, df_rate, ph_rate]
             self.save_json(f'{self.log_folder}rate_dict.json', self.rate_dict)
-            self.use_list_length = len(self.use_lists)
+            self.img_pattern = len(self.use_lists)
 
         self.data_set_folder_path_list = get_file_paths(self.train_data_folder)
         #>> self.data_set_folder_path_list = ['{{self.default_path}}/train_data/pathological_specimen_01', '{{self.default_path}}/train_data/pathological_specimen_02', '{{self.default_path}}/train_data/pathological_specimen_03', '{{self.default_path}}/train_data/pathological_specimen_04']
