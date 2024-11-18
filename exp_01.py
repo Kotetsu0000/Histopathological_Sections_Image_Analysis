@@ -80,7 +80,7 @@ class Extraction:
         ## 比較対称になる条件
         ### 実験対象(膜, 核)
         self.experiment_subject = experiment_subject
-        assert self.experiment_subject in ['membrane', 'nucleus'], f'実験対象が不正です。experiment_subject : {self.experiment_subject}'
+        assert self.experiment_subject in ['membrane', 'nuclear'], f'実験対象が不正です。experiment_subject : {self.experiment_subject}'
         
         ### 使用ネットワーク(U-Net, U-Net++)
         self.use_Network = use_Network
