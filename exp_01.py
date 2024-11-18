@@ -165,7 +165,7 @@ class Extraction:
 
         ### 学習時にAutocastを使用する場合のdtype
         self.autocast_dtype = autocast_dtype
-        assert self.autocast_dtype in [torch.float16, torch.float32], f'autocast_dtypeが不正です。autocast_dtype : {self.autocast_dtype}'
+        assert self.autocast_dtype in [torch.float16, torch.bfloat16, torch.float32], f'autocast_dtypeが不正です。autocast_dtype : {self.autocast_dtype}'
 
         ### 記録用のフォルダのパス
         self.default_path = self.set_path(default_path)
@@ -595,7 +595,7 @@ if __name__ == '__main__':
 
     if args.config is not None:
         perser = configparser.ConfigParser()
-        perser.read('config.ini', encoding='utf-8')
+        perser.read(args.config, encoding='utf-8')
         DATA_PATH = perser['DATA_PATH']
         RESULT_PATH = perser['RESULT_PATH']
         EXPERIMENT_PARAM = perser['EXPERIMENT_PARAM']
