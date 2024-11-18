@@ -251,9 +251,9 @@ class Extraction:
                     bf_rate = bf * self.blend_particle_size
                     df_rate = df * self.blend_particle_size
                     ph_rate = 1 - bf_rate - df_rate
-                    assert 0 <= ph_rate <= 1, f'ph_rateが不正です。ph_rate : {ph_rate}'
-                    self.use_lists.append([bf_rate, df_rate, ph_rate])
-                    self.rate_dict[f'exp{exp_num:04d}'] = [bf_rate, df_rate, ph_rate]
+                    if 0<=ph_rate<=1:
+                        self.use_lists.append([bf_rate, df_rate, ph_rate])
+                        self.rate_dict[f'exp{exp_num:04d}'] = [bf_rate, df_rate, ph_rate]
             self.save_json(f'{self.log_folder}rate_dict.json', self.rate_dict)
             self.use_list_length = len(self.use_lists)
 
