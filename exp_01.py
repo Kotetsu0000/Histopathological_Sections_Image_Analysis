@@ -210,9 +210,9 @@ class Extraction:
         ####################################################################################################################
         # 学習画像の作成
         self.pathological_specimen_folder_paths = get_file_paths(self.img_path)
+        #>> pathological_specimen_folder_paths = ['Data/master_exp_data/pathological_specimen_01', 'Data/master_exp_data/pathological_specimen_02', 'Data/master_exp_data/pathological_specimen_03', 'Data/master_exp_data/pathological_specimen_04']
         if self.start_num == 0:
             logger.info('学習時に利用する画像の作成開始')
-            #>> pathological_specimen_folder_paths = ['Data/master_exp_data/pathological_specimen_01', 'Data/master_exp_data/pathological_specimen_02', 'Data/master_exp_data/pathological_specimen_03', 'Data/master_exp_data/pathological_specimen_04']
             pathological_specimen_folder_stems = get_file_stems(self.img_path)
             #>> pathological_specimen_folder_stems = ['pathological_specimen_01', 'pathological_specimen_02', 'pathological_specimen_03', 'pathological_specimen_04']
 
@@ -450,7 +450,9 @@ class Extraction:
             self.device = torch.device(f'cuda:{self.use_device[0]}')
 
         # Define model
-        if self.use_list_length == 3:
+        if self.blend == 'alpha':
+            in_channels = 3
+        elif self.use_list_length == 3:
             in_channels = sum(self.use_list) * 3
         else:
             in_channels = sum(self.use_list)
@@ -477,7 +479,7 @@ class Extraction:
             self.scaler = GradScaler()
 
         # Data loader
-        self.dataloader = get_dataloader(self.train_path_list, self.use_list, self.color, batch_size=self.batch_size, num_workers=2, isShuffle=True, pin_memory=True)
+        self.dataloader = get_dataloader(self.train_path_list, self.use_list, self.color, self.blend, batch_size=self.batch_size, num_workers=2, isShuffle=True, pin_memory=True)
 
         # Training
         for epoch in range(self.num_epochs):
@@ -616,6 +618,7 @@ if __name__ == '__main__':
     experiment_subject = DATA_PATH.get('experiment_subject', 'membrane')
     use_Network = EXPERIMENT_PARAM.get('use_Network', 'U-Net')
     color = EXPERIMENT_PARAM.get('color', 'RGB')
+    blend = EXPERIMENT_PARAM.get('blend', 'concatenate')
     gradation = bool(EXPERIMENT_PARAM.get('gradation', False))
     start_num = int(EXPERIMENT_PARAM.get('start_num', 0))
     num_epochs = int(EXPERIMENT_PARAM.get('num_epochs', 40))
@@ -645,6 +648,7 @@ if __name__ == '__main__':
         experiment_subject=experiment_subject,
         use_Network=use_Network,
         color=color,
+        blend=blend,
         gradation=gradation,
         start_num=start_num,
         num_epochs=num_epochs,
