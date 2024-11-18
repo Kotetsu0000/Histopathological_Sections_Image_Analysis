@@ -57,6 +57,7 @@ class Extraction:
             blend:str='concatenate',
             blend_particle_size:float=0.1,
             gradation:bool=True,
+            use_loss:str='DiceLoss',
             start_num:int=0,
             num_epochs:int=40,
             lr:float=5e-05,
@@ -103,7 +104,7 @@ class Extraction:
 
         ## 実験全体で固定するパラメータ
         ### 使用するLossの種類(DiceLoss, BCELoss)
-        self.use_loss = 'DiceLoss'
+        self.use_loss = use_loss
         assert self.use_loss in ['DiceLoss', 'BCELoss'], f'使用Lossが不正です。use_loss : {self.use_loss}'
 
         ### スタートの番号(途中から再開する場合のみ変更)
