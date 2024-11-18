@@ -262,7 +262,11 @@ class Extraction:
             data (dict): 保存するデータ
         """
         with open(path, 'w', encoding='UTF-8') as f:
-            json.dump(data, f, indent=4, ensure_ascii=False)
+            json.dump(data, f, indent=4, ensure_ascii=False, default=self.custom_encoder)
+
+    def custom_encoder(self, obj) -> str:
+        if not isinstance(obj, str):
+            return str(obj)
 
     def parm_log(self) -> None:
         """パラメータの記録を行う関数"""
