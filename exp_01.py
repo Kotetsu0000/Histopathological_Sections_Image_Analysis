@@ -1,6 +1,8 @@
 '''
-薄い標本の細胞膜抽出実験用のプログラム。画像は最低3分割できるような枚数が必要。
+薄い標本の細胞膜抽出実験用のプログラム。
+通常、画像は最低3分割できるような枚数が必要。
 N分割(N>2)にした場合、学習:評価:テスト = N-2:1:1 となる。
+2分割の場合、学習:テスト = 1:1 となる。
 '''
 from logging import getLogger, StreamHandler, FileHandler, Formatter, DEBUG
 logger = getLogger(__name__)
