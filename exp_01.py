@@ -216,6 +216,7 @@ class Extraction:
         # 学習画像の作成
         self.pathological_specimen_folder_paths = get_file_paths(self.img_path)
         #>> pathological_specimen_folder_paths = ['Data/master_exp_data/pathological_specimen_01', 'Data/master_exp_data/pathological_specimen_02', 'Data/master_exp_data/pathological_specimen_03', 'Data/master_exp_data/pathological_specimen_04']
+        assert len(self.pathological_specimen_folder_paths) > 1, f'画像は2分割以上である必要があります。pathological_specimen_folder_paths : {self.pathological_specimen_folder_paths}'
         if self.start_num == 0:
             logger.info('学習時に利用する画像の作成開始')
             pathological_specimen_folder_stems = get_file_stems(self.img_path)
@@ -458,9 +459,10 @@ class Extraction:
             for self.j in range(self.roop_num):
                 self.train_path_list = self.data_set_folder_path_list.copy()
                 self.test_path = self.train_path_list.pop(self.j)#テストに使用するファイルパス
-                self.val_path = self.train_path_list.pop(self.j-1)#評価に使用するファイルパス
                 self.test_num = self.data_set_folder_path_list.index(self.test_path)#テストに使用するインデックス
-                self.val_num = self.data_set_folder_path_list.index(self.val_path)#評価に使用するインデックス
+                if self.roop_num > 2:
+                    self.val_path = self.train_path_list.pop(self.j-1)#評価に使用するファイルパス
+                    self.val_num = self.data_set_folder_path_list.index(self.val_path)#評価に使用するインデックス
                 logger.info(f'experiment: {self.exp_num}/{self.img_pattern} - roop_num: {self.j + 1} / {self.roop_num} - all_roop_num: {(self.exp_num - 1) * self.roop_num + self.j + 1} / {self.roop_num * self.img_pattern}')
                 self.train_roop()
 
@@ -508,10 +510,11 @@ class Extraction:
             logger.info(f'experiment: {self.exp_num}/{self.img_pattern} - roop_num: {self.j + 1} / {self.roop_num} - all_roop_num: {(self.exp_num - 1) * self.roop_num + self.j + 1} / {self.roop_num * self.img_pattern} - epoch: {epoch + 1}/{self.num_epochs}')
             self.train()
 
-            # Validation
-            img_path_list = self.pathological_specimen_folder_paths[self.val_num]
-            save_path = self.set_path(f'{self.save_image_path}val/exp{self.exp_num:04d}/val{self.val_num+1:02d}/epoch{epoch+1:02d}/')
-            self.save_image(img_path_list, save_path)
+            if self.roop_num > 2:
+                # Validation
+                img_path_list = self.pathological_specimen_folder_paths[self.val_num]
+                save_path = self.set_path(f'{self.save_image_path}val/exp{self.exp_num:04d}/val{self.val_num+1:02d}/epoch{epoch+1:02d}/')
+                self.save_image(img_path_list, save_path)
             
             # Test
             img_path_list = self.pathological_specimen_folder_paths[self.test_num]
