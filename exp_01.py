@@ -1,5 +1,5 @@
 '''
-薄い標本の細胞膜抽出実験用のプログラム。
+薄い標本の細胞膜、細胞核の抽出実験用のプログラム。
 通常、画像は最低3分割できるような枚数が必要。
 N分割(N>2)にした場合、学習:評価:テスト = N-2:1:1 となる。
 2分割の場合、学習:テスト = 1:1 となる。
@@ -39,6 +39,7 @@ from VitLib import (
     file_exists, 
     create_directory,
     modify_line_width,
+    make_nuclear_evaluate_images,
 )
 from VitLib_PyTorch.Loss import DiceLoss
 from VitLib_PyTorch.Network import U_Net, Nested_U_Net
@@ -59,6 +60,10 @@ class Extraction:
             blend:str='concatenate',
             blend_particle_size:float=0.2,
             gradation:bool=True,
+            train_dont_care:bool=False,
+            care_rate = 75,
+            lower_ratio = 17,
+            heigher_ratio = 0,
             use_loss:str='DiceLoss',
             start_num:int=0,
             num_epochs:int=40,
@@ -102,7 +107,15 @@ class Extraction:
             self.blend_particle_size = blend_particle_size
 
         ### 細胞膜の正解画像の膨張時にグラデーションにするか、しないか
-        self.gradation = gradation
+        if self.experiment_subject == 'membrane':
+            self.gradation = gradation
+
+        ### 細胞核の学習画像にDon't careを含むかどうか
+        if self.experiment_subject == 'nuclear':
+            self.train_dont_care = train_dont_care
+            self.care_rate = care_rate
+            self.lower_ratio = lower_ratio
+            self.heigher_ratio = heigher_ratio
 
         ## 実験全体で固定するパラメータ
         ### 使用するLossの種類(DiceLoss, BCELoss)
@@ -228,7 +241,10 @@ class Extraction:
                 if self.experiment_subject == 'membrane':
                     #細線化の正解から学習用の正解を作成する
                     logger.info(folder_path+' の細線化の正解画像から学習用の正解を作成開始')
-                    self.make_ans_img(folder_path)
+                    self.make_ans_img_membrane(folder_path)
+                elif self.experiment_subject == 'nuclear':
+                    #細胞核のDon't care画像を作成する。
+                    self.make_ans_img_nuclear(folder_path)
                 #データ拡張
                 logger.info(folder_path+' のデータ拡張画像を作成開始')
                 self.proc_img(folder_path, self.train_data_folder + folder_stem)
@@ -303,7 +319,8 @@ class Extraction:
         logger.info(f'実験対象 : {self.experiment_subject}')
         logger.info(f'使用ネットワーク : {self.use_Network}')
         logger.info(f'使用色空間 : {self.color}')
-        logger.info(f'細胞膜の正解画像の膨張時にグラデーションにするか、しないか : {self.gradation}')
+        if self.experiment_subject == 'membrane':logger.info(f'細胞膜の正解画像の膨張時にグラデーションにするか、しないか : {self.gradation}')
+        if self.experiment_subject == 'nuclear':logger.info(f'細胞核の学習画像にDon\'t careを含むかどうか : {self.train_dont_care}')
         logger.info(f'使用Loss : {self.use_loss}')
         logger.info(f'スタートの番号 : {self.start_num}')
         logger.info(f'合計エポック数 : {self.num_epochs}')
@@ -369,7 +386,7 @@ class Extraction:
                 self.save_json(self.default_path + '/log/data_parm.json', vars(self))
                 self.parm_log()
 
-    def make_ans_single_img(self, in_path:str, out_path:str) -> None:
+    def make_ans_single_img_membrane(self, in_path:str, out_path:str) -> None:
         """細線化の正解画像から学習用の正解画像を作成する関数
 
         Args:
@@ -387,14 +404,40 @@ class Extraction:
             result = modify_line_width(img_thin, radius=self.radius_train)
         cv2.imwrite(out_path, result*255)
 
-    def make_ans_img(self, img_folder_path:str) -> None:
+    def make_ans_img_membrane(self, img_folder_path:str) -> None:
         """細線化の正解画像から学習用の正解画像を作成する関数
         
         Args:
             img_folder_path (str): 画像フォルダのパス
         """
         for img_path in get_file_paths(img_folder_path):
-            self.make_ans_single_img(f'{img_path}/y_membrane/ans_thin.png', f'{img_path}/y_membrane/ans.png')
+            self.make_ans_single_img_membrane(f'{img_path}/y_membrane/ans_thin.png', f'{img_path}/y_membrane/ans.png')
+
+    def make_ans_single_img_nuclear(self, in_ans_path:str, in_bf_path:str, out_eval_img_path:str, out_red_img:str, out_green_img:str) -> None:
+        """核の正解画像と明視野画像からDon't care画像を作成する関数
+
+        Args:
+            in_ans_path (str): 正解画像のパス
+            in_bf_path (str): 明視野画像のパス
+            out_eval_img_path (str): 評価画像の保存先パス
+            out_red_img (str): 赤チャンネルの保存先パス
+            out_green_img (str): 緑チャンネルの保存先パス
+        """
+        ans_img = cv2.imread(in_ans_path, cv2.IMREAD_GRAYSCALE)
+        bf_img = cv2.imread(in_bf_path, cv2.IMREAD_GRAYSCALE)
+        result = make_nuclear_evaluate_images(ans_img, bf_img, self.care_rate, self.lower_ratio, self.heigher_ratio)
+        cv2.imwrite(out_eval_img_path, result['eval_img'])
+        cv2.imwrite(out_red_img, result['red_img'])
+        cv2.imwrite(out_green_img, result['green_img'])
+
+    def make_ans_img_nuclear(self, img_folder_path:str) -> None:
+        """核の正解画像と明視野画像からDon't care画像を作成する関数
+        
+        Args:
+            img_folder_path (str): 画像フォルダのパス
+        """
+        for img_path in get_file_paths(img_folder_path):
+            self.make_ans_single_img_nuclear(f'{img_path}/y_nuclear/ans.png', f'{img_path}/x/{BRIGHT_FIELD}.png', f'{img_path}/y_nuclear/eval.png', f'{img_path}/y_nuclear/red.png', f'{img_path}/y_nuclear/green.png')
 
     def proc_img(self, img_folder_path:str, save_folder_path:str) -> None:
         """画像の拡張を行う関数
@@ -419,10 +462,18 @@ class Extraction:
         for img_path in get_file_paths(img_folder_path):
             # 画像の読み込み
             logger.info(f'{img_path} の画像を作成中')
-            bf_img = cv2.imread(f'{img_path}/x/{BRIGHT_FIELD}.png')
-            df_img = cv2.imread(f'{img_path}/x/{DARK_FIELD}.png')
-            he_img = cv2.imread(f'{img_path}/x/{PHASE_CONTRAST}.png')
-            ans_img = cv2.imread(f'{img_path}/y_{self.experiment_subject}/ans.png', cv2.IMREAD_GRAYSCALE)
+            bf_img = cv2.imread(f'{img_path}/x/{BRIGHT_FIELD}.png', cv2.IMREAD_COLOR)
+            df_img = cv2.imread(f'{img_path}/x/{DARK_FIELD}.png', cv2.IMREAD_COLOR)
+            he_img = cv2.imread(f'{img_path}/x/{PHASE_CONTRAST}.png', cv2.IMREAD_COLOR)
+            if self.experiment_subject == 'membrane':
+                ans_img = cv2.imread(f'{img_path}/y_{self.experiment_subject}/ans.png', cv2.IMREAD_GRAYSCALE)
+            elif self.experiment_subject == 'nuclear':
+                if self.train_dont_care:
+                    ans_img = cv2.imread(f'{img_path}/y_{self.experiment_subject}/ans.png', cv2.IMREAD_GRAYSCALE)
+                else:
+                    ans_img = cv2.imread(f'{img_path}/y_{self.experiment_subject}/green.png', cv2.IMREAD_GRAYSCALE)
+            else:
+                raise Exception(f'実験対象が不正です。experiment_subject : {self.experiment_subject}')
 
             for i in range(self.data_augmentation_num):
                 if i % (self.data_augmentation_num//10) == 0:
@@ -647,6 +698,10 @@ if __name__ == '__main__':
     color = EXPERIMENT_PARAM.get('color', 'RGB')
     blend = EXPERIMENT_PARAM.get('blend', 'concatenate')
     gradation = bool(EXPERIMENT_PARAM.get('gradation', False))
+    train_dont_care = bool(EXPERIMENT_PARAM.get('train_dont_care', False))
+    care_rate = float(EXPERIMENT_PARAM.get('care_rate', 75))
+    lower_ratio = float(EXPERIMENT_PARAM.get('lower_ratio', 17))
+    higher_ratio = float(EXPERIMENT_PARAM.get('higher_ratio', 0))
     start_num = int(EXPERIMENT_PARAM.get('start_num', 0))
     num_epochs = int(EXPERIMENT_PARAM.get('num_epochs', 40))
     lr = float(EXPERIMENT_PARAM.get('lr', 5e-4))
@@ -677,6 +732,10 @@ if __name__ == '__main__':
         color=color,
         blend=blend,
         gradation=gradation,
+        train_dont_care=train_dont_care,
+        care_rate=care_rate,
+        lower_ratio=lower_ratio,
+        higher_ratio=higher_ratio,
         start_num=start_num,
         num_epochs=num_epochs,
         lr=lr,
