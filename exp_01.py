@@ -203,7 +203,7 @@ class Extraction:
         elif self.start_num == 0:
             raise Exception(self.default_path + '/log/exp.logは存在します。')
         ## 推論結果画像の保存先
-        self.save_image_path = self.set_path(self.default_path + '/eval_data/')
+        self.save_image_path = self.set_path(self.default_path + f'/eval_data_{experiment_subject}/')
 
         ####################################################################################################################
         # 学習パラメータの記録
