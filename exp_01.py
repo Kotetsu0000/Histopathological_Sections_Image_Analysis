@@ -57,7 +57,7 @@ class Extraction:
             use_Network:str='U-Net',
             color:str='RGB',
             blend:str='concatenate',
-            blend_particle_size:float=0.1,
+            blend_particle_size:float=0.2,
             gradation:bool=True,
             use_loss:str='DiceLoss',
             start_num:int=0,
