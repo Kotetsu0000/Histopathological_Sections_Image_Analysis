@@ -107,11 +107,11 @@ class Extraction:
             self.blend_particle_size = blend_particle_size
 
         ### 細胞膜の正解画像の膨張時にグラデーションにするか、しないか
-        if self.experiment_subject == 'membrane':
+        if self.experiment_subject == 'membrane' or self.experiment_subject == 'both':
             self.gradation = gradation
 
         ### 細胞核の学習画像にDon't careを含むかどうか
-        if self.experiment_subject == 'nuclear':
+        if self.experiment_subject == 'nuclear' or self.experiment_subject == 'both':
             self.train_dont_care = train_dont_care
             self.care_rate = care_rate
             self.lower_ratio = lower_ratio
