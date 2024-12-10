@@ -44,7 +44,7 @@ from VitLib import (
 from VitLib_PyTorch.Loss import DiceLoss
 from VitLib_PyTorch.Network import U_Net, Nested_U_Net
 
-from Dataset.Dataset_exp_01 import get_dataloader, get_image
+from Dataset import Dataset_exp_01, Dataset_exp_01_both
 
 # 撮像法名略称
 BRIGHT_FIELD = 'bf'
@@ -89,7 +89,7 @@ class Extraction:
         ## 比較対称になる条件
         ### 実験対象(膜, 核)
         self.experiment_subject = experiment_subject
-        assert self.experiment_subject in ['membrane', 'nuclear'], f'実験対象が不正です。experiment_subject : {self.experiment_subject}'
+        assert self.experiment_subject in ['membrane', 'nuclear', 'both'], f'実験対象が不正です。experiment_subject : {self.experiment_subject}'
         
         ### 使用ネットワーク(U-Net, U-Net++)
         self.use_Network = use_Network
@@ -216,7 +216,11 @@ class Extraction:
         elif self.start_num == 0:
             raise Exception(self.default_path + '/log/exp.logは存在します。')
         ## 推論結果画像の保存先
-        self.save_image_path = self.set_path(self.default_path + f'/eval_data_{experiment_subject}/')
+        if self.experiment_subject == 'membrane' or self.experiment_subject == 'nuclear':
+            self.save_image_path = self.set_path(self.default_path + f'/eval_data_{experiment_subject}/')
+        elif self.experiment_subject == 'both':
+            self.save_membrane_image_path = self.set_path(self.default_path + '/eval_data_membrane/')
+            self.save_nuclear_image_path = self.set_path(self.default_path + '/eval_data_nuclear/')
 
         ####################################################################################################################
         # 学習パラメータの記録
@@ -244,7 +248,15 @@ class Extraction:
                     self.make_ans_img_membrane(folder_path)
                 elif self.experiment_subject == 'nuclear':
                     #細胞核のDon't care画像を作成する。
+                    logger.info(folder_path+' の核の正解画像から学習用の正解を作成開始')
                     self.make_ans_img_nuclear(folder_path)
+                elif self.experiment_subject == 'both':
+                    logger.info(folder_path+' の細線化の正解画像から学習用の正解を作成開始')
+                    self.make_ans_img_membrane(folder_path)
+                    logger.info(folder_path+' の核の正解画像から学習用の正解を作成開始')
+                    self.make_ans_img_nuclear(folder_path)
+                else:
+                    raise Exception(f'実験対象が不正です。experiment_subject : {self.experiment_subject}')
                 #データ拡張
                 logger.info(folder_path+' のデータ拡張画像を作成開始')
                 self.proc_img(folder_path, self.train_data_folder + folder_stem)
@@ -451,7 +463,13 @@ class Extraction:
         create_directory(f'{save_folder_path}/{BRIGHT_FIELD}')
         create_directory(f'{save_folder_path}/{DARK_FIELD}')
         create_directory(f'{save_folder_path}/{PHASE_CONTRAST}')
-        create_directory(f'{save_folder_path}/y')
+        if self.experiment_subject == 'membrane' or self.experiment_subject == 'nuclear':
+            create_directory(f'{save_folder_path}/y')
+        elif self.experiment_subject == 'both':
+            create_directory(f'{save_folder_path}/y_membrane')
+            create_directory(f'{save_folder_path}/y_nuclear')
+        else:
+            raise Exception(f'実験対象が不正です。experiment_subject : {self.experiment_subject}')
 
         # 画像が既に存在する場合は実験中断の可能性があるため、エラーを出力
         img_num = len(get_file_paths(f'{save_folder_path}/{BRIGHT_FIELD}'))
@@ -472,13 +490,24 @@ class Extraction:
                     ans_img = cv2.imread(f'{img_path}/y_{self.experiment_subject}/ans.png', cv2.IMREAD_GRAYSCALE)
                 else:
                     ans_img = cv2.imread(f'{img_path}/y_{self.experiment_subject}/green.png', cv2.IMREAD_GRAYSCALE)
+            elif self.experiment_subject == 'both':
+                ans_mem_img = cv2.imread(f'{img_path}/y_membrane/ans.png', cv2.IMREAD_GRAYSCALE)
+                if self.train_dont_care:
+                    ans_nuc_img = cv2.imread(f'{img_path}/y_nuclear/ans.png', cv2.IMREAD_GRAYSCALE)
+                else:
+                    ans_nuc_img = cv2.imread(f'{img_path}/y_nuclear/green.png', cv2.IMREAD_GRAYSCALE)
             else:
                 raise Exception(f'実験対象が不正です。experiment_subject : {self.experiment_subject}')
 
             for i in range(self.data_augmentation_num):
                 if i % (self.data_augmentation_num//10) == 0:
                     logger.info(f'{i}/{self.data_augmentation_num} の画像を作成中...')
-                img_list = [bf_img, df_img, he_img, ans_img]
+                if self.experiment_subject == 'membrane' or self.experiment_subject == 'nuclear':
+                    img_list = [bf_img, df_img, he_img, ans_img]
+                elif self.experiment_subject == 'both':
+                    img_list = [bf_img, df_img, he_img, ans_mem_img, ans_nuc_img]
+                else:
+                    raise Exception(f'実験対象が不正です。experiment_subject : {self.experiment_subject}')
                 img_list = image_processing.random_cut_image(img_list, self.train_size)
                 img_list = image_processing.random_flip_image(img_list)
                 img_list = image_processing.random_rotate_image(img_list)
@@ -488,7 +517,13 @@ class Extraction:
                 cv2.imwrite(f'{save_folder_path}/{BRIGHT_FIELD}/{img_num:05d}.png', img_list[0])
                 cv2.imwrite(f'{save_folder_path}/{DARK_FIELD}/{img_num:05d}.png', img_list[1])
                 cv2.imwrite(f'{save_folder_path}/{PHASE_CONTRAST}/{img_num:05d}.png', img_list[2])
-                cv2.imwrite(f'{save_folder_path}/y/{img_num:05d}.png', img_list[3])
+                if self.experiment_subject == 'membrane' or self.experiment_subject == 'nuclear':
+                    cv2.imwrite(f'{save_folder_path}/y/{img_num:05d}.png', img_list[3])
+                elif self.experiment_subject == 'both':
+                    cv2.imwrite(f'{save_folder_path}/y_membrane/{img_num:05d}.png', img_list[3])
+                    cv2.imwrite(f'{save_folder_path}/y_nuclear/{img_num:05d}.png', img_list[4])
+                else:
+                    raise Exception(f'実験対象が不正です。experiment_subject : {self.experiment_subject}')
                 img_num += 1
             logger.info(f'{img_path} の画像の作成完了')
 
@@ -535,9 +570,19 @@ class Extraction:
             in_channels = sum(self.use_list)
 
         if self.use_Network == 'U-Net':
-            self.model = U_Net(in_channels, 1, bilinear=False).to(self.device, non_blocking=True)
+            if self.experiment_subject == 'membrane' or self.experiment_subject == 'nucler':
+                self.model = U_Net(in_channels, 1, bilinear=False).to(self.device, non_blocking=True)
+            elif self.experiment_subject == 'both':
+                self.model = U_Net(in_channels, 2, bilinear=False).to(self.device, non_blocking=True)
+            else:
+                raise Exception(f'実験対象が不正です。experiment_subject : {self.experiment_subject}')
         elif self.use_Network == 'U-Net++':
-            self.model = Nested_U_Net(in_channels, 1).to(self.device, non_blocking=True)
+            if self.experiment_subject == 'membrane' or self.experiment_subject == 'nucler':
+                self.model = Nested_U_Net(in_channels, 1).to(self.device, non_blocking=True)
+            elif self.experiment_subject == 'both':
+                self.model = Nested_U_Net(in_channels, 2).to(self.device, non_blocking=True)
+            else:
+                raise Exception(f'実験対象が不正です。experiment_subject : {self.experiment_subject}')
         else:
             raise Exception(f'使用ネットワークが不正です。use_Network : {self.use_Network}')
         
@@ -556,7 +601,10 @@ class Extraction:
             self.scaler = GradScaler()
 
         # Data loader
-        self.dataloader = get_dataloader(self.train_path_list, self.use_list, self.color, self.blend, batch_size=self.batch_size, num_workers=2, isShuffle=True, pin_memory=True)
+        if self.experiment_subject == 'membrane' or self.experiment_subject == 'nuclear':
+            self.dataloader = Dataset_exp_01.get_dataloader(self.train_path_list, self.use_list, self.color, self.blend, batch_size=self.batch_size, num_workers=2, isShuffle=True, pin_memory=True)
+        elif self.experiment_subject == 'both':
+            self.dataloader = Dataset_exp_01_both.get_dataloader(self.train_path_list, self.use_list, self.color, self.blend, batch_size=self.batch_size, num_workers=2, isShuffle=True, pin_memory=True, experiment_subject=self.experiment_subject)
 
         # Training
         for epoch in range(self.num_epochs):
@@ -566,15 +614,24 @@ class Extraction:
             if self.roop_num > 2:
                 # Validation
                 img_path_list = self.pathological_specimen_folder_paths[self.val_num]
-                save_path = self.set_path(f'{self.save_image_path}val/exp{self.exp_num:04d}/val{self.val_num+1:02d}/epoch{epoch+1:02d}/')
-                self.save_image(img_path_list, save_path)
+                if self.experiment_subject == 'membrane' or self.experiment_subject == 'nuclear':
+                    save_path = self.set_path(f'{self.save_image_path}val/exp{self.exp_num:04d}/val{self.val_num+1:02d}/epoch{epoch+1:02d}/')
+                    self.save_image(img_path_list, save_path)
+                elif self.experiment_subject == 'both':
+                    save_path = self.set_path(f'{self.save_membrane_image_path}val/exp{self.exp_num:04d}/val{self.val_num+1:02d}/epoch{epoch+1:02d}/')
+                    save_nuclear_path = self.set_path(f'{self.save_nuclear_image_path}val/exp{self.exp_num:04d}/val{self.val_num+1:02d}/epoch{epoch+1:02d}/')
             
             # Test
             img_path_list = self.pathological_specimen_folder_paths[self.test_num]
-            save_path = self.set_path(f'{self.save_image_path}test/exp{self.exp_num:04d}/test{self.val_num+1:02d}/epoch{epoch+1:02d}/')
-            self.save_image(img_path_list, save_path)
+            if self.experiment_subject == 'membrane' or self.experiment_subject == 'nuclear':
+                save_path = self.set_path(f'{self.save_image_path}test/exp{self.exp_num:04d}/test{self.val_num+1:02d}/epoch{epoch+1:02d}/')
+                self.save_image(img_path_list, save_path)
+            elif self.experiment_subject == 'both':
+                save_path = self.set_path(f'{self.save_membrane_image_path}test/exp{self.exp_num:04d}/test{self.val_num+1:02d}/epoch{epoch+1:02d}/')
+                save_nuclear_path = self.set_path(f'{self.save_nuclear_image_path}test/exp{self.exp_num:04d}/test{self.val_num+1:02d}/epoch{epoch+1:02d}/')
+                self.save_image(img_path_list, save_path, save_nuclear_path)
 
-    def image_compression_save(self, pred:torch.Tensor, path:str, index:int=0, divide:int=2) -> None:
+    def image_compression_save(self, pred:torch.Tensor, path:str, index:int=0, divide:int=2, channel:int=0) -> None:
         """推論結果を圧縮して画像保存する関数
         
         Args:
@@ -584,7 +641,7 @@ class Extraction:
             divide (int, optional): 保存する画像の分割数. Defaults to 2.
         """
         #torch.Tensor -> numpy.ndarray(cv2)
-        img_torch = pred[index][0]
+        img_torch = pred[index][channel]
         img_cv2 =  np.array(img_torch.cpu().detach().numpy().copy()*255, dtype=np.uint8)
 
         #要素を圧縮
@@ -596,12 +653,13 @@ class Extraction:
         #保存
         img_PIL.save(path)
 
-    def save_image(self, img_path_list:str, save_path:str) -> None:
+    def save_image(self, img_path_list:str, save_path:str, save_nuclear_path:str=None) -> None:
         """画像を保存する関数
         
         Args:
             img_path_list (str): 推論に使用する画像のPath
-            save_path (str): 保存先のパス
+            save_path (str): 保存先のパス(self.experiment_subjectが'membrane'または'nuclear'の場合), 細胞膜画像の保存先のパス(self.experiment_subjectが'both'の場合)
+            save_nuclear_path (str, optional): 細胞核画像の保存先のパス(self.experiment_subjectが'both'の場合). Defaults to None.
         """
         img_folder_path_list = get_file_paths(img_path_list)
         for img_path in tqdm(img_folder_path_list):
@@ -611,7 +669,7 @@ class Extraction:
                 img_path_list.append(f'{img_path}/x/{img_name}.png')
 
             self.model.eval()
-            img = get_image(img_path_list, self.use_list, self.color, self.blend)
+            img = Dataset_exp_01.get_image(img_path_list, self.use_list, self.color, self.blend)
             img = img.to(self.device)
 
             with torch.no_grad():
@@ -637,7 +695,11 @@ class Extraction:
                 #np.savez_compressed(save_path+str(img_num)+'.npz', img = pred[:, :, 0])
 
                 pred = self.model(img)
-                self.image_compression_save(pred, f'{save_path}{img_num}.png', divide=self.compress_rate)
+                if self.experiment_subject == 'membrane' or self.experiment_subject == 'nuclear':
+                    self.image_compression_save(pred, f'{save_path}{img_num}.png', divide=self.compress_rate)
+                elif self.experiment_subject == 'both':
+                    self.image_compression_save(pred, f'{save_path}{img_num}.png', divide=self.compress_rate, channel=0)
+                    self.image_compression_save(pred, f'{save_nuclear_path}{img_num}.png', divide=self.compress_rate, channel=1)
                 del pred
                 torch.cuda.empty_cache()
             
