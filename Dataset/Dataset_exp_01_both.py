@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 
 class Dataset(data.Dataset):
-    def __init__(self, folder_path, use_list, color='RGB', blend='concatenate'):
+    def __init__(self, folder_path, use_list, color='RGB', blend='concatenate', other_channel=False):
         """
         Args:
             folder_path (list): 画像フォルダのパス
@@ -35,6 +35,7 @@ class Dataset(data.Dataset):
         self.use_list = use_list
         self.color = color
         self.blend = blend
+        self.other_channel = other_channel
         self.to_tensor = torchvision.transforms.ToTensor()
 
         if blend == 'alpha' and len(use_list)!=3:
@@ -78,7 +79,12 @@ class Dataset(data.Dataset):
                 x = cv2.merge(img_list)
             y_membrane = cv2.imread(self.y_membrane_img_paths[index],cv2.IMREAD_GRAYSCALE)
             y_nuclear = cv2.imread(self.y_nuclear_img_paths[index],cv2.IMREAD_GRAYSCALE)
-            y = cv2.merge([y_membrane, y_nuclear])
+            if self.other_channel:
+                y_other - np.ones_like(y_membrane, dtype=np.float32) - y_membrane.astype(np.float32) - y_nuclear.astype(np.float32)
+                y_other = np.where(y_other>0, y_other, 0).astype(np.uint8)
+                y = cv2.merge([y_membrane, y_nuclear, y_other])
+            else:
+                y = cv2.merge([y_membrane, y_nuclear])
             return self.to_tensor(x),self.to_tensor(y)
         elif self.blend == 'alpha':
             bf = cv2.imread(self.bf_img_paths[index],cv2.IMREAD_COLOR)
@@ -86,7 +92,12 @@ class Dataset(data.Dataset):
             ph = cv2.imread(self.ph_img_paths[index],cv2.IMREAD_COLOR)
             y_membrane = cv2.imread(self.y_membrane_img_paths[index],cv2.IMREAD_GRAYSCALE)
             y_nuclear = cv2.imread(self.y_nuclear_img_paths[index],cv2.IMREAD_GRAYSCALE)
-            y = cv2.merge([y_membrane, y_nuclear])
+            if self.other_channel:
+                y_other - np.ones_like(y_membrane, dtype=np.float32) - y_membrane.astype(np.float32) - y_nuclear.astype(np.float32)
+                y_other = np.where(y_other>0, y_other, 0).astype(np.uint8)
+                y = cv2.merge([y_membrane, y_nuclear, y_other])
+            else:
+                y = cv2.merge([y_membrane, y_nuclear])
             if self.color == 'RGB':
                 bf = cv2.cvtColor(bf, cv2.COLOR_BGR2RGB)
                 df = cv2.cvtColor(df, cv2.COLOR_BGR2RGB)
@@ -130,8 +141,8 @@ class Dataset(data.Dataset):
         img_path = [str(path) for path in img_path]
         return img_path
 
-def get_dataloader(folder_path, use_list, color='RGB', blend='concatenate', batch_size = 1, num_workers=0, isShuffle=True, pin_memory=True):
-    dataset = Dataset(folder_path, use_list, color=color, blend=blend)
+def get_dataloader(folder_path, use_list, color='RGB', blend='concatenate', other_channel=False, batch_size = 1, num_workers=0, isShuffle=True, pin_memory=True):
+    dataset = Dataset(folder_path, use_list, color=color, blend=blend, other_channel=other_channel)
     return data.DataLoader(dataset, batch_size=batch_size, num_workers=num_workers, shuffle=isShuffle, pin_memory=pin_memory)
 
 def _get_image(img_path, color, use_list=None):

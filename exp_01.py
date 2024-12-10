@@ -64,6 +64,8 @@ class Extraction:
             care_rate = 75,
             lower_ratio = 17,
             heigher_ratio = 0,
+            use_other_channel:bool=False,
+            use_softmax:bool=False,
             use_loss:str='DiceLoss',
             start_num:int=0,
             num_epochs:int=40,
@@ -116,6 +118,11 @@ class Extraction:
             self.care_rate = care_rate
             self.lower_ratio = lower_ratio
             self.heigher_ratio = heigher_ratio
+
+        ### 同時学習時にOther channelを挟むかどうか
+        if self.experiment_subject == 'both':
+            self.use_other_channel = use_other_channel
+            self.use_softmax = use_softmax
 
         ## 実験全体で固定するパラメータ
         ### 使用するLossの種類(DiceLoss, BCELoss)
@@ -331,8 +338,15 @@ class Extraction:
         logger.info(f'実験対象 : {self.experiment_subject}')
         logger.info(f'使用ネットワーク : {self.use_Network}')
         logger.info(f'使用色空間 : {self.color}')
-        if self.experiment_subject == 'membrane':logger.info(f'細胞膜の正解画像の膨張時にグラデーションにするか、しないか : {self.gradation}')
-        if self.experiment_subject == 'nuclear':logger.info(f'細胞核の学習画像にDon\'t careを含むかどうか : {self.train_dont_care}')
+        if self.experiment_subject == 'membrane' or self.experiment_subject == 'both':
+            logger.info(f'細胞膜の正解画像の膨張時にグラデーションにするか、しないか : {self.gradation}')
+        if self.experiment_subject == 'nuclear' or self.experiment_subject == 'both':
+            logger.info(f'細胞核の学習画像にDon\'t careを含むかどうか : {self.train_dont_care}')
+            logger.info(f'細胞核のDon\'t care画像の割合 : {self.care_rate}')
+            logger.info(f'細胞核のDon\'t care画像の下限割合 : {self.lower_ratio}')
+            logger.info(f'細胞核のDon\'t care画像の上限割合 : {self.heigher_ratio}')
+        if self.experiment_subject == 'both':
+            logger.info(f'同時学習時にOther channelを挟むかどうか : {self.use_other_channel}')
         logger.info(f'使用Loss : {self.use_loss}')
         logger.info(f'スタートの番号 : {self.start_num}')
         logger.info(f'合計エポック数 : {self.num_epochs}')
@@ -577,14 +591,20 @@ class Extraction:
             if self.experiment_subject == 'membrane' or self.experiment_subject == 'nucler':
                 self.model = U_Net(in_channels, 1, bilinear=False).to(self.device, non_blocking=True)
             elif self.experiment_subject == 'both':
-                self.model = U_Net(in_channels, 2, bilinear=False).to(self.device, non_blocking=True)
+                if self.use_other_channel:
+                    self.model = U_Net(in_channels, 3, bilinear=False, softmax=self.use_softmax).to(self.device, non_blocking=True)
+                else:
+                    self.model = U_Net(in_channels, 2, bilinear=False, softmax=self.use_softmax).to(self.device, non_blocking=True)
             else:
                 raise Exception(f'実験対象が不正です。experiment_subject : {self.experiment_subject}')
         elif self.use_Network == 'U-Net++':
             if self.experiment_subject == 'membrane' or self.experiment_subject == 'nucler':
                 self.model = Nested_U_Net(in_channels, 1).to(self.device, non_blocking=True)
             elif self.experiment_subject == 'both':
-                self.model = Nested_U_Net(in_channels, 2).to(self.device, non_blocking=True)
+                if self.use_other_channel:
+                    self.model = Nested_U_Net(in_channels, 3, softmax=self.use_softmax).to(self.device, non_blocking=True)
+                else:
+                    self.model = Nested_U_Net(in_channels, 2, softmax=self.use_softmax).to(self.device, non_blocking=True)
             else:
                 raise Exception(f'実験対象が不正です。experiment_subject : {self.experiment_subject}')
         else:
@@ -608,7 +628,7 @@ class Extraction:
         if self.experiment_subject == 'membrane' or self.experiment_subject == 'nuclear':
             self.dataloader = Dataset_exp_01.get_dataloader(self.train_path_list, self.use_list, self.color, self.blend, batch_size=self.batch_size, num_workers=2, isShuffle=True, pin_memory=True)
         elif self.experiment_subject == 'both':
-            self.dataloader = Dataset_exp_01_both.get_dataloader(self.train_path_list, self.use_list, self.color, self.blend, batch_size=self.batch_size, num_workers=2, isShuffle=True, pin_memory=True)
+            self.dataloader = Dataset_exp_01_both.get_dataloader(self.train_path_list, self.use_list, self.color, self.blend, self.use_other_channel, batch_size=self.batch_size, num_workers=2, isShuffle=True, pin_memory=True)
 
         # Training
         for epoch in range(self.num_epochs):
@@ -769,6 +789,8 @@ if __name__ == '__main__':
     care_rate = float(EXPERIMENT_PARAM.get('care_rate', 75))
     lower_ratio = float(EXPERIMENT_PARAM.get('lower_ratio', 17))
     higher_ratio = float(EXPERIMENT_PARAM.get('higher_ratio', 0))
+    use_other_channel = bool(EXPERIMENT_PARAM.get('use_other_channel', False))
+    use_softmax = bool(EXPERIMENT_PARAM.get('use_softmax', False))
     start_num = int(EXPERIMENT_PARAM.get('start_num', 0))
     num_epochs = int(EXPERIMENT_PARAM.get('num_epochs', 40))
     lr = float(EXPERIMENT_PARAM.get('lr', 5e-4))
