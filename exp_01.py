@@ -355,7 +355,11 @@ class Extraction:
         logger.info(f'エラーを無視するための設定 : {self.ignore_error}')
         logger.info(f'学習時のデータ展開先フォルダ : {self.train_data_folder}')
         logger.info(f'ログ記録用フォルダ : {self.log_folder}')
-        logger.info(f'推論結果画像の保存先 : {self.save_image_path}')        
+        if self.experiment_subject == 'membrane' or self.experiment_subject == 'nuclear':
+            logger.info(f'推論結果画像の保存先 : {self.save_image_path}')
+        elif self.experiment_subject == 'both':
+            logger.info(f'細胞膜の推論結果画像の保存先 : {self.save_membrane_image_path}')
+            logger.info(f'細胞核の推論結果画像の保存先 : {self.save_nuclear_image_path}')
 
     def load_json(self, path:str) -> dict:
         """jsonファイルからデータを読み込む関数
