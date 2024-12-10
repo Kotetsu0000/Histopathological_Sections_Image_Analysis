@@ -440,7 +440,7 @@ class Extraction:
             out_green_img (str): 緑チャンネルの保存先パス
         """
         ans_img = cv2.imread(in_ans_path, cv2.IMREAD_GRAYSCALE)
-        bf_img = cv2.imread(in_bf_path, cv2.IMREAD_GRAYSCALE)
+        bf_img = cv2.imread(in_bf_path, cv2.IMREAD_COLOR)
         result = make_nuclear_evaluate_images(ans_img, bf_img, self.care_rate, self.lower_ratio, self.heigher_ratio)
         cv2.imwrite(out_eval_img_path, result['eval_img'])
         cv2.imwrite(out_red_img, result['red_img'])
