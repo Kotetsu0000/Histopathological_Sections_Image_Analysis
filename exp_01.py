@@ -624,6 +624,7 @@ class Extraction:
                 elif self.experiment_subject == 'both':
                     save_path = self.set_path(f'{self.save_membrane_image_path}val/exp{self.exp_num:04d}/val{self.val_num+1:02d}/epoch{epoch+1:02d}/')
                     save_nuclear_path = self.set_path(f'{self.save_nuclear_image_path}val/exp{self.exp_num:04d}/val{self.val_num+1:02d}/epoch{epoch+1:02d}/')
+                    self.save_image(img_path_list, save_path, save_nuclear_path)
             
             # Test
             img_path_list = self.pathological_specimen_folder_paths[self.test_num]
