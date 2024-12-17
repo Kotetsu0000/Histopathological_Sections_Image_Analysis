@@ -80,7 +80,7 @@ class Dataset(data.Dataset):
             y_membrane = cv2.imread(self.y_membrane_img_paths[index],cv2.IMREAD_GRAYSCALE)
             y_nuclear = cv2.imread(self.y_nuclear_img_paths[index],cv2.IMREAD_GRAYSCALE)
             if self.other_channel:
-                y_other - np.ones_like(y_membrane, dtype=np.float32) - y_membrane.astype(np.float32) - y_nuclear.astype(np.float32)
+                y_other = np.ones_like(y_membrane, dtype=np.float32) - y_membrane.astype(np.float32) - y_nuclear.astype(np.float32)
                 y_other = np.where(y_other>0, y_other, 0).astype(np.uint8)
                 y = cv2.merge([y_membrane, y_nuclear, y_other])
             else:
