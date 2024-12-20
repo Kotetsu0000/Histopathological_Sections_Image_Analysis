@@ -441,7 +441,10 @@ class Extraction:
             img_folder_path (str): 画像フォルダのパス
         """
         for img_path in get_file_paths(img_folder_path):
-            self.make_ans_single_img_membrane(f'{img_path}/y_membrane/ans_thin.png', f'{img_path}/y_membrane/ans.png')
+            if self.gradation:
+                self.make_ans_single_img_membrane(f'{img_path}/y_membrane/ans_thin.png', f'{img_path}/y_membrane/ans.png')
+            else:
+                self.make_ans_single_img_membrane(f'{img_path}/y_membrane/ans_thin.png', f'{img_path}/y_membrane/ans_nograd.png')
 
     def make_ans_single_img_nuclear(self, in_ans_path:str, in_bf_path:str, out_eval_img_path:str, out_red_img:str, out_green_img:str) -> None:
         """核の正解画像と明視野画像からDon't care画像を作成する関数
@@ -502,14 +505,20 @@ class Extraction:
             df_img = cv2.imread(f'{img_path}/x/{DARK_FIELD}.png', cv2.IMREAD_COLOR)
             he_img = cv2.imread(f'{img_path}/x/{PHASE_CONTRAST}.png', cv2.IMREAD_COLOR)
             if self.experiment_subject == 'membrane':
-                ans_img = cv2.imread(f'{img_path}/y_{self.experiment_subject}/ans.png', cv2.IMREAD_GRAYSCALE)
+                if self.gradation:
+                    ans_img = cv2.imread(f'{img_path}/y_membrane/ans.png', cv2.IMREAD_GRAYSCALE)
+                else:
+                    ans_img = cv2.imread(f'{img_path}/y_membrane/ans_nograd.png', cv2.IMREAD_GRAYSCALE)
             elif self.experiment_subject == 'nuclear':
                 if self.train_dont_care:
                     ans_img = cv2.imread(f'{img_path}/y_{self.experiment_subject}/ans.png', cv2.IMREAD_GRAYSCALE)
                 else:
                     ans_img = cv2.imread(f'{img_path}/y_{self.experiment_subject}/green.png', cv2.IMREAD_GRAYSCALE)
             elif self.experiment_subject == 'both':
-                ans_mem_img = cv2.imread(f'{img_path}/y_membrane/ans.png', cv2.IMREAD_GRAYSCALE)
+                if self.gradation:
+                    ans_mem_img = cv2.imread(f'{img_path}/y_membrane/ans.png', cv2.IMREAD_GRAYSCALE)
+                else:
+                    ans_mem_img = cv2.imread(f'{img_path}/y_membrane/ans_nograd.png', cv2.IMREAD_GRAYSCALE)
                 if self.train_dont_care:
                     ans_nuc_img = cv2.imread(f'{img_path}/y_nuclear/ans.png', cv2.IMREAD_GRAYSCALE)
                 else:
