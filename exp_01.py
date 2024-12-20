@@ -819,7 +819,7 @@ if __name__ == '__main__':
     try:
         autocast_dtype = getattr(torch, autocast_dtype_text)
     except AttributeError:
-        autocast_dtype = torch.float16
+        autocast_dtype = torch.bfloat16
     default_path = RESULT_PATH.get('default_path', './result')
     compress_rate = int(EXPERIMENT_PARAM.get('compress_rate', 1))
     ignore_error = bool(EXPERIMENT_PARAM.get('ignore_error', False))
