@@ -781,15 +781,14 @@ if __name__ == '__main__':
     if args.config is not None:
         perser = configparser.ConfigParser()
         perser.read(args.config, encoding='utf-8')
-        DATA_PATH = perser['DATA_PATH']
-        RESULT_PATH = perser['RESULT_PATH']
+        EXPERIMENT_PATH = perser['EXPERIMENT_PATH']
         EXPERIMENT_PARAM = perser['EXPERIMENT_PARAM']
     else:
-        DATA_PATH = {}
-        RESULT_PATH = {}
+        #DATA_PATH = {}
+        #RESULT_PATH = {}
         EXPERIMENT_PARAM = {}
 
-    experiment_subject = DATA_PATH.get('experiment_subject', 'membrane')
+    experiment_subject = EXPERIMENT_PARAM.get('experiment_subject', 'membrane')
     use_Network = EXPERIMENT_PARAM.get('use_Network', 'U-Net')
     color = EXPERIMENT_PARAM.get('color', 'RGB')
     blend = EXPERIMENT_PARAM.get('blend', 'concatenate')
@@ -805,7 +804,7 @@ if __name__ == '__main__':
     lr = float(EXPERIMENT_PARAM.get('lr', 5e-4))
     batch_size = int(EXPERIMENT_PARAM.get('batch_size', 32))
     use_list_length = int(EXPERIMENT_PARAM.get('use_list_length', 3))
-    img_path = DATA_PATH.get('img_path', './Data/master_exp_data')
+    img_path = EXPERIMENT_PATH.get('img_path', './Data/master_exp_data')
     data_augmentation_num = int(EXPERIMENT_PARAM.get('data_augmentation_num', 500))
     train_size = ast.literal_eval(EXPERIMENT_PARAM.get('train_size', '(256, 256)'))
     saturation_mag = ast.literal_eval(EXPERIMENT_PARAM.get('saturation_mag', '(0.7, 1.3)'))
@@ -820,7 +819,7 @@ if __name__ == '__main__':
         autocast_dtype = getattr(torch, autocast_dtype_text)
     except AttributeError:
         autocast_dtype = torch.bfloat16
-    default_path = RESULT_PATH.get('default_path', './result')
+    default_path = EXPERIMENT_PATH.get('default_path', './result')
     compress_rate = int(EXPERIMENT_PARAM.get('compress_rate', 1))
     ignore_error = bool(EXPERIMENT_PARAM.get('ignore_error', False))
 
