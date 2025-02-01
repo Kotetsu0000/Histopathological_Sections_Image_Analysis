@@ -734,6 +734,8 @@ class Extraction:
                 #np.savez_compressed(save_path+str(img_num)+'.npz', img = pred[:, :, 0])
 
                 pred = self.model(img)
+                if isinstance(pred, list):
+                    pred = pred[-1]
                 if self.experiment_subject == 'membrane' or self.experiment_subject == 'nuclear':
                     self.image_compression_save(pred, f'{save_path}{img_num}.png', divide=self.compress_rate)
                 elif self.experiment_subject == 'both':
