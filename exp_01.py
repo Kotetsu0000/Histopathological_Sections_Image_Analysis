@@ -63,7 +63,7 @@ class Extraction:
             train_dont_care:bool=False,
             care_rate = 75,
             lower_ratio = 17,
-            heigher_ratio = 0,
+            higher_ratio = 0,
             use_other_channel:bool=False,
             use_softmax:bool=False,
             use_loss:str='DiceLoss',
@@ -117,7 +117,7 @@ class Extraction:
             self.train_dont_care = train_dont_care
             self.care_rate = care_rate
             self.lower_ratio = lower_ratio
-            self.heigher_ratio = heigher_ratio
+            self.higher_ratio = higher_ratio
 
         ### 同時学習時にOther channelを挟むかどうか
         if self.experiment_subject == 'both':
@@ -344,7 +344,7 @@ class Extraction:
             logger.info(f'細胞核の学習画像にDon\'t careを含むかどうか : {self.train_dont_care}')
             logger.info(f'細胞核のDon\'t care画像の割合 : {self.care_rate}')
             logger.info(f'細胞核のDon\'t care画像の下限割合 : {self.lower_ratio}')
-            logger.info(f'細胞核のDon\'t care画像の上限割合 : {self.heigher_ratio}')
+            logger.info(f'細胞核のDon\'t care画像の上限割合 : {self.higher_ratio}')
         if self.experiment_subject == 'both':
             logger.info(f'同時学習時にOther channelを挟むかどうか : {self.use_other_channel}')
         logger.info(f'使用Loss : {self.use_loss}')
@@ -458,7 +458,7 @@ class Extraction:
         """
         ans_img = cv2.imread(in_ans_path, cv2.IMREAD_GRAYSCALE)
         bf_img = cv2.imread(in_bf_path, cv2.IMREAD_COLOR)
-        result = make_nuclear_evaluate_images(ans_img, bf_img, self.care_rate, self.lower_ratio, self.heigher_ratio)
+        result = make_nuclear_evaluate_images(ans_img, bf_img, self.care_rate, self.lower_ratio, self.higher_ratio)
         cv2.imwrite(out_eval_img_path, result['eval_img'])
         cv2.imwrite(out_red_img, result['red_img'])
         cv2.imwrite(out_green_img, result['green_img'])
