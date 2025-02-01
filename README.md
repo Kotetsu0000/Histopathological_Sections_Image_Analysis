@@ -13,11 +13,11 @@
 ├─pathological_specimen_01(同一標本をまとめるフォルダ, フォルダ名は任意で可)
 │   ├─01(フォルダ名は任意で可)
 │   │  ├─x              (最初から入れておく必要あり→[bf.png, df.png, he.png])
-|   │  ├─y_membrane     (最初から入れておく必要あり→[ans_thin.png], 実験開始時に作成→[ans.png])
+|   │  ├─y_membrane     (最初から入れておく必要あり→[ans_thin.png], 実験開始時に作成→[ans.png, ans_nograd.png])
 │   │  └─y_nuclear      (最初から入れておく必要あり→[ans.png], 実験開始時に作成→[red.png, green.png])
 │   ├─02
 │   │  ├─x              (最初から入れておく必要あり→[bf.png, df.png, he.png])
-|   │  ├─y_membrane     (最初から入れておく必要あり→[ans_thin.png], 実験開始時に作成→[ans.png])
+|   │  ├─y_membrane     (最初から入れておく必要あり→[ans_thin.png], 実験開始時に作成→[ans.png, ans_nograd.png])
 │   │  └─y_nuclear      (最初から入れておく必要あり→[ans.png], 実験開始時に作成→[red.png, green.png])
 │   同一標本内の画像の枚数分続く
 ├─pathological_specimen_02
