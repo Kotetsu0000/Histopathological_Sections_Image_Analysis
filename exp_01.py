@@ -804,6 +804,7 @@ if __name__ == '__main__':
 
     experiment_subject = EXPERIMENT_PARAM.get('experiment_subject', 'membrane')
     use_Network = EXPERIMENT_PARAM.get('use_Network', 'U-Net')
+    deep_supervision = bool(EXPERIMENT_PARAM.get('deep_supervision', False))
     color = EXPERIMENT_PARAM.get('color', 'RGB')
     blend = EXPERIMENT_PARAM.get('blend', 'concatenate')
     gradation = bool(EXPERIMENT_PARAM.get('gradation', False))
