@@ -784,8 +784,7 @@ if __name__ == '__main__':
         EXPERIMENT_PATH = perser['EXPERIMENT_PATH']
         EXPERIMENT_PARAM = perser['EXPERIMENT_PARAM']
     else:
-        #DATA_PATH = {}
-        #RESULT_PATH = {}
+        EXPERIMENT_PATH = {}
         EXPERIMENT_PARAM = {}
 
     experiment_subject = EXPERIMENT_PARAM.get('experiment_subject', 'membrane')
