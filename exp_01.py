@@ -56,6 +56,7 @@ class Extraction:
             self,
             experiment_subject:str='membrane',
             use_Network:str='U-Net',
+            deep_supervision:bool=False,
             color:str='RGB',
             blend:str='concatenate',
             blend_particle_size:float=0.2,
@@ -96,6 +97,10 @@ class Extraction:
         ### 使用ネットワーク(U-Net, U-Net++)
         self.use_Network = use_Network
         assert self.use_Network in ['U-Net', 'U-Net++'], f'使用ネットワークが不正です。use_Network : {self.use_Network}'
+
+        ### Deep Supervisionの有無
+        if self.use_Network == 'U-Net++':
+            self.deep_supervision = deep_supervision
 
         ### 使用色空間(self.use_list_lengthが3または9の場合、RGB, HSV)
         self.color = color
@@ -608,12 +613,12 @@ class Extraction:
                 raise Exception(f'実験対象が不正です。experiment_subject : {self.experiment_subject}')
         elif self.use_Network == 'U-Net++':
             if self.experiment_subject == 'membrane' or self.experiment_subject == 'nucler':
-                self.model = Nested_U_Net(in_channels, 1).to(self.device, non_blocking=True)
+                self.model = Nested_U_Net(in_channels, 1, deepsupervision=self.deep_supervision).to(self.device, non_blocking=True)
             elif self.experiment_subject == 'both':
                 if self.use_other_channel:
-                    self.model = Nested_U_Net(in_channels, 3, softmax=self.use_softmax).to(self.device, non_blocking=True)
+                    self.model = Nested_U_Net(in_channels, 3, softmax=self.use_softmax, deepsupervision=self.deep_supervision).to(self.device, non_blocking=True)
                 else:
-                    self.model = Nested_U_Net(in_channels, 2, softmax=self.use_softmax).to(self.device, non_blocking=True)
+                    self.model = Nested_U_Net(in_channels, 2, softmax=self.use_softmax, deepsupervision=self.deep_supervision).to(self.device, non_blocking=True)
             else:
                 raise Exception(f'実験対象が不正です。experiment_subject : {self.experiment_subject}')
         else:
@@ -754,7 +759,12 @@ class Extraction:
 
                 with autocast(device_type='cuda', dtype=self.autocast_dtype):
                     pred = self.model(x)
-                    loss = self.criterion(pred, y)
+                    if isinstance(pred, list):
+                        loss = 0
+                        for p in pred:
+                            loss += self.criterion(p, y)
+                    else:
+                        loss = self.criterion(pred, y)
                 self.scaler.scale(loss).backward()
                 self.scaler.unscale_(self.optimizer)
                 nn.utils.clip_grad_norm_(self.model.parameters(), 4.0)
@@ -764,7 +774,12 @@ class Extraction:
                 self.optimizer.zero_grad(set_to_none=True)
 
                 pred = self.model(x)
-                loss = self.criterion(pred, y)
+                if isinstance(pred, list):
+                    loss = 0
+                    for p in pred:
+                        loss += self.criterion(p, y)
+                else:
+                    loss = self.criterion(pred, y)
 
                 loss.backward()
                 self.optimizer.step()
