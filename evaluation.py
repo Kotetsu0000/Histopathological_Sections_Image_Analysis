@@ -70,9 +70,8 @@ class SparseEvaluation:
         path_list_length = len(path_list)
         self.logger.info(f'length of path_list: {path_list_length}')
         for i, path in enumerate(path_list):
+            self.logger.info(f'Processing {i+1}/{path_list_length}')
             self.evaluate_img(path)
-            if i % 100 == 0:
-                self.logger.info(f'Processing {i+1}/{path_list_length}')
 
     def evaluate_img(self, img_path:str):
         """画像単位の評価を行う"""
@@ -245,9 +244,8 @@ class DenseEvaluation:
         path_list_length = len(path_list)
         self.logger.info(f'length of path_list: {path_list_length}')
         for i, path in enumerate(path_list):
+            self.logger.info(f'Processing {i+1}/{path_list_length}')
             self.evaluate_img(path)
-            if i % 100 == 0:
-                self.logger.info(f'Processing {i+1}/{path_list_length}')
 
     def evaluate_img(self, img_path:str):
         """画像単位の評価を行う"""
