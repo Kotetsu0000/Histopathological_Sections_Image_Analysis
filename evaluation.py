@@ -1102,7 +1102,7 @@ if __name__ == "__main__":
         'membrane_sparse_del_area_step': int(EVALIATION_PARAM.get('membrane_sparse_del_area_step', 5)),
     }
     
-    evaluation = Evaluation(path_folder, ans_folder_path, experiment_subject, experiment_param)
+    evaluation = Evaluation(path_folder, ans_folder_path, experiment_param)
     evaluation.sparse_evaluation()
     evaluation.dense_evaluation()
     evaluation.aggregation()
