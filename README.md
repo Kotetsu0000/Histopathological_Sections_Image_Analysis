@@ -57,7 +57,7 @@ PyTorchのインストール方法は[公式サイト](https://pytorch.org/get-s
 その後、以下のコマンドを実行して必要なライブラリをインストールしてください。
 
 ```bash
-pip install git+https://github.com/Kotetsu0000/VitLib.git git+https://github.com/Kotetsu0000/VitLib_PyTorch.git
+pip install git+https://github.com/Kotetsu0000/VitLib.git git+https://github.com/Kotetsu0000/VitLib_PyTorch.git pandas
 ```
 
 

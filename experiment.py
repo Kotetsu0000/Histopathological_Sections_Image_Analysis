@@ -44,7 +44,7 @@ from VitLib import (
 from VitLib_PyTorch.Loss import DiceLoss
 from VitLib_PyTorch.Network import U_Net, Nested_U_Net
 
-from Dataset import Dataset_exp_01, Dataset_exp_01_both
+from Dataset import Dataset_experiment_both, Dataset_experiment_single
 
 # 撮像法名略称
 BRIGHT_FIELD = 'bf'
@@ -640,9 +640,9 @@ class Extraction:
 
         # Data loader
         if self.experiment_subject == 'membrane' or self.experiment_subject == 'nuclear':
-            self.dataloader = Dataset_exp_01.get_dataloader(self.train_path_list, self.use_list, self.color, self.blend, batch_size=self.batch_size, num_workers=2, isShuffle=True, pin_memory=True)
+            self.dataloader = Dataset_experiment_single.get_dataloader(self.train_path_list, self.use_list, self.color, self.blend, batch_size=self.batch_size, num_workers=2, isShuffle=True, pin_memory=True)
         elif self.experiment_subject == 'both':
-            self.dataloader = Dataset_exp_01_both.get_dataloader(self.train_path_list, self.use_list, self.color, self.blend, self.use_other_channel, batch_size=self.batch_size, num_workers=2, isShuffle=True, pin_memory=True)
+            self.dataloader = Dataset_experiment_both.get_dataloader(self.train_path_list, self.use_list, self.color, self.blend, self.use_other_channel, batch_size=self.batch_size, num_workers=2, isShuffle=True, pin_memory=True)
 
         # Training
         for epoch in range(self.num_epochs):
@@ -708,7 +708,7 @@ class Extraction:
                 img_path_list.append(f'{img_path}/x/{img_name}.png')
 
             self.model.eval()
-            img = Dataset_exp_01.get_image(img_path_list, self.use_list, self.color, self.blend)
+            img = Dataset_experiment_single.get_image(img_path_list, self.use_list, self.color, self.blend)
             img = img.to(self.device)
 
             with torch.no_grad():
