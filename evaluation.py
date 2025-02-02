@@ -38,11 +38,23 @@ class Evaluation:
         file_handler.setFormatter(formatter)
         self.logger.addHandler(file_handler)
 
+        self.sparse_evaluation_end = False
+        self.dense_evaluation_end = False
+
     def sparse_evaluation(self):
         """sparse_evaluationを行う"""
         self.logger.info('Start Sparse Evaluation(疎探索評価)')
         sparse_evaluation = SparseEvaluation(self.path_folder, self.ans_list, self.experiment_subject, self.experiment_param, self.logger)
         sparse_evaluation.evaluate()
+        self.sparse_evaluation_end = True
+
+    def dense_evaluation(self):
+        """dense_evaluationを行う"""
+        assert self.sparse_evaluation_end, 'Sparse Evaluation is not finished'
+        self.logger.info('Start Dense Evaluation(密探索評価)')
+        dense_evaluation = DenseEvaluation(self.path_folder, self.ans_list, self.experiment_subject, self.experiment_param, self.logger)
+        dense_evaluation.evaluate()
+        self.dense_evaluation_end = True
 
 class SparseEvaluation:
     def __init__(self, path_folder:str, ans_list:list, experiment_subject:str, experiment_param:dict, logger:Logger):
@@ -219,7 +231,219 @@ class SparseEvaluation:
             if search_name in path:
                 return path
 
+class DenseEvaluation:
+    def __init__(self, path_folder:str, ans_list:list, experiment_subject:str, experiment_param:dict, logger:Logger):
+        self.path_folder = path_folder
+        self.ans_list = ans_list
+        self.experiment_subject = experiment_subject
+        self.experiment_param = experiment_param
+        self.logger = logger
 
+    def evaluate(self):
+        """dense_evaluationを行う"""
+        path_list = self.get_png_flies_without_csv(self.path_folder)
+        path_list_length = len(path_list)
+        self.logger.info(f'length of path_list: {path_list_length}')
+        for i, path in enumerate(path_list):
+            self.evaluate_img(path)
+            if i % 100 == 0:
+                self.logger.info(f'Processing {i+1}/{path_list_length}')
+
+    def evaluate_img(self, img_path:str):
+        """画像単位の評価を行う"""
+        self.logger.info(f'Processing {img_path}')
+        if 'eval_data_membrane' in img_path:
+            subject = 'membrane'
+        elif 'eval_data_nuclear' in img_path:
+            subject = 'nuclear'
+
+        # 画像の情報を取得
+        exp_num = self.get_int_number(r"exp(\d+)", img_path)
+        val_num = self.get_int_number(r"(?:val|test)(\d+)", img_path)
+        epoch_num = self.get_int_number(r"epoch(\d+)", img_path)
+        pred_name = os.path.splitext(os.path.basename(img_path))[0]
+        ans_path = self.select_ans_img_folder_path(pred_name, self.ans_list) + f'/y_{subject}/ans.png'
+
+        # 画像の読み込み
+        pred_img = imread(img_path)
+        ans_img = imread(ans_path)
+
+        assert pred_img is not None, f'Failed to read {img_path}'
+        assert ans_img is not None, f'Failed to read {ans_path}'
+
+        sparse_csv_path = img_path.replace('.png', '_sparse.csv').replace('eval_data_membrane', 'log_eval_membrane').replace('eval_data_nuclear', 'log_eval_nuclear')
+        assert os.path.exists(sparse_csv_path), f'Not found {sparse_csv_path}'
+        sparse_df = pd.read_csv(sparse_csv_path)
+
+        best_fmeasure = sparse_df['fmeasure'].max()
+        best_row = sparse_df[sparse_df['fmeasure'] == best_fmeasure]
+        
+        best_threshold_max = best_row['threshold'].max()
+        best_threshold_min = best_row['threshold'].min()
+        max_th = sparse_df[sparse_df['threshold'] > best_threshold_max]['threshold'].min()
+        min_th = sparse_df[sparse_df['threshold'] < best_threshold_min]['threshold'].max()
+
+        try:
+            max_th = int(max_th)+1
+        except:
+            max_th = int(best_threshold_max)+1
+        try:
+            min_th = int(min_th)
+        except:
+            min_th = int(best_threshold_min)
+
+        best_del_area_max = best_row['deleted_area'].max()
+        best_del_area_min = best_row['deleted_area'].min()
+        max_area = sparse_df[sparse_df['deleted_area'] > best_del_area_max]['deleted_area'].min()
+        min_area = sparse_df[sparse_df['deleted_area'] < best_del_area_min]['deleted_area'].max()
+
+        try:
+            max_area = int(max_area)+1
+        except:
+            max_area = int(best_del_area_max)+1
+        try:
+            min_area = int(min_area)
+        except:
+            min_area = int(best_del_area_min)
+
+        self.logger.info(f'Min Threshold: {min_th}, Max Threshold: {max_th}, Min Area: {min_area}, Max Area: {max_area}')
+
+        if subject == 'membrane':
+            results = evaluate_membrane_prediction_range(
+                pred_img, ans_img,
+                radius=self.experiment_param['radius_eval'],
+                min_th=min_th,
+                max_th=max_th,
+                step_th=1,
+                min_area=min_area,
+                max_area=max_area,
+                step_area=1,
+                symmetric=True,
+                verbose=True,
+            )
+            result_dicts = []
+            for result in results:
+                threshold = result[0]
+                del_area = result[1]
+                precision = result[2]
+                recall = result[3]
+                fmeasure = result[4]
+                membrane_length = result[5]
+                tip_length = result[6]
+                miss_length = result[7]
+                result_dict = {
+                    'exp_num': exp_num,
+                    'val_num': val_num,
+                    'epoch_num': epoch_num,
+                    'img_name': pred_name,
+                    'threshold': threshold,
+                    'deleted_area': del_area,
+                    'precision': precision,
+                    'recall': recall,
+                    'fmeasure': fmeasure,
+                    'membrane_length': membrane_length,
+                    'tip_length': tip_length,
+                    'miss_length': miss_length,
+                }
+                result_dicts.append(result_dict)
+        elif subject == 'nuclear':
+            results = evaluate_nuclear_prediction_range(
+                pred_img, ans_img,
+                care_rate=self.experiment_param['care_rate'],
+                lower_ratio=self.experiment_param['lower_ratio'],
+                higher_ratio=self.experiment_param['higher_ratio'],
+                min_th=min_th,
+                max_th=max_th,
+                step_th=1,
+                min_area=min_area,
+                max_area=max_area,
+                step_area=1,
+                eval_mode=self.experiment_param['nuclear_eval_mode'],
+                distance=self.experiment_param['nuclear_eval_distance'],
+                verbose=True,
+            )
+            result_dicts = []
+            for result in results:
+                threshold = result[0]
+                del_area = result[1]
+                precision = result[2]
+                recall = result[3]
+                fmeasure = result[4]
+                correct_num = result[5]
+                conformity_bottom = result[6]
+                care_num = result[7]
+                result_dict = {
+                    'exp_num': exp_num,
+                    'val_num': val_num,
+                    'epoch_num': epoch_num,
+                    'img_name': pred_name,
+                    'threshold': threshold,
+                    'deleted_area': del_area,
+                    'precision': precision,
+                    'recall': recall,
+                    'fmeasure': fmeasure,
+                    'correct_num': correct_num,
+                    'conformity_bottom': conformity_bottom,
+                    'care_num': care_num,
+                }
+                result_dicts.append(result_dict)
+
+        csv_path = img_path.replace('.png', '.csv').replace('eval_data_membrane', 'log_eval_membrane').replace('eval_data_nuclear', 'log_eval_nuclear')
+        folder_path = os.path.dirname(csv_path)
+        create_directory(folder_path)
+
+        df = pd.DataFrame(result_dicts)
+        df.to_csv(csv_path, index=False)
+        self.logger.info(f'Saved {csv_path}')
+
+
+    def get_png_flies_without_csv(self, root_path:str) -> tuple:
+        '''CSVのないPNGファイルを取得する。
+        
+        Args:
+            root_path (str): モニタリングするフォルダのパス
+
+        Returns:
+            list: CSVのないPNGファイルのパスのリスト
+        '''
+        path_list = []
+        for root, dirs, files in os.walk(root_path):
+            for file in files:
+                if file.endswith('.png') and 'train_data' not in root:
+                    if (os.path.exists(os.path.join(root, file).replace('.png', '_sparse.csv').replace('eval_data_membrane', 'log_eval_membrane').replace('eval_data_nuclear', 'log_eval_nuclear')) and
+                        not os.path.exists(os.path.join(root, file).replace('.png', '.csv').replace('eval_data_membrane', 'log_eval_membrane').replace('eval_data_nuclear', 'log_eval_nuclear')) ):
+                        path_list.append(os.path.join(root, file).replace('\\', '/'))
+                        if len(path_list) % 100 == 0:
+                            self.logger.info(f'length of path_list: {len(path_list)}')
+        return path_list
+
+    def get_int_number(self, match_str:str, target:str) -> int:
+        '''正規表現でマッチした文字列から数字を取得する。
+        
+        Args:
+            match_str (str): 正規表現でマッチした文字列
+            target (str): マッチしたい文字列
+            
+        Returns:
+            int: マッチした数字
+        '''
+        match_ = re.search(match_str, target)
+        assert match_ is not None, f'Not found {match_str} in {target}'
+        return int(match_.group(1))
+
+    def select_ans_img_folder_path(self, search_name:str, path_list:list) -> str:
+        """指定した名前を含むパスを取得する。
+
+        Args:
+            search_name (str): 検索する名前
+            path_list (list): 検索するパスのリスト
+
+        Returns:
+            str: 検索したパス
+        """
+        for path in path_list:
+            if search_name in path:
+                return path
 
 def get_ans_img_folder_path(path:str) -> list:
     """指定したパス以下のansフォルダのパスを取得する。
