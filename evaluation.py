@@ -549,4 +549,7 @@ if __name__ == "__main__":
         'membrane_sparse_del_area_max': int(EVALIATION_PARAM.get('membrane_sparse_del_area_max', 0)) if EVALIATION_PARAM.get('membrane_sparse_del_area_max', 'None') != 'None' else None,
         'membrane_sparse_del_area_step': int(EVALIATION_PARAM.get('membrane_sparse_del_area_step', 5)),
     }
-    print(experiment_param)
+    
+    evaluation = Evaluation(path_folder, ans_folder_path, experiment_subject, experiment_param)
+    evaluation.sparse_evaluation()
+    evaluation.dense_evaluation()
