@@ -90,8 +90,8 @@ class SparseEvaluation:
         ans_path = self.select_ans_img_folder_path(pred_name, self.ans_list) + f'/y_{subject}/ans.png'
 
         # 画像の読み込み
-        pred_img = imread(img_path)
-        ans_img = imread(ans_path)
+        pred_img = imread(img_path, cv2.IMREAD_GRAYSCALE)
+        ans_img = imread(ans_path, cv2.IMREAD_GRAYSCALE)
 
         assert pred_img is not None, f'Failed to read {img_path}'
         assert ans_img is not None, f'Failed to read {ans_path}'
@@ -265,8 +265,8 @@ class DenseEvaluation:
         ans_path = self.select_ans_img_folder_path(pred_name, self.ans_list) + f'/y_{subject}/ans.png'
 
         # 画像の読み込み
-        pred_img = imread(img_path)
-        ans_img = imread(ans_path)
+        pred_img = imread(img_path, cv2.IMREAD_GRAYSCALE)
+        ans_img = imread(ans_path, cv2.IMREAD_GRAYSCALE)
 
         assert pred_img is not None, f'Failed to read {img_path}'
         assert ans_img is not None, f'Failed to read {ans_path}'
