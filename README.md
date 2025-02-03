@@ -85,7 +85,7 @@ python experiment.py --config config.ini
 ```
 
 > [!IMPORTANT]
-> congigオプションを指定しない場合は、すべてデフォルトの設定で実行されます。
+> configオプションを指定しない場合は、すべてデフォルトの設定で実行されます。
 
 #### config.iniの設定
 
