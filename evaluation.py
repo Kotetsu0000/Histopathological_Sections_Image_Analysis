@@ -61,6 +61,7 @@ class Evaluation:
         self.logger.info('Start Evaluation Aggregation')
         evaluation_aggregation = EvaluationAggregation(self.path_folder, self.ans_list, self.experiment_param, self.logger)
         evaluation_aggregation.aggregate_validation()
+        evaluation_aggregation.aggregate_test()
 
 class SparseEvaluation:
     def __init__(self, path_folder:str, ans_list:list, experiment_param:dict, logger:Logger):
