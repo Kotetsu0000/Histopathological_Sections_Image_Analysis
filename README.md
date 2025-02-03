@@ -41,10 +41,14 @@
     - green.png: 細胞核のセグメンテーション画像(考慮外核以外の核)
     - eval.png: 明視野撮像法と細胞核の正解(考慮外核: 赤, 考慮外核以外: 緑)を重ねた画像
 
-## 環境構築方法
+## 環境構築方法(物理マシンに環境構築する場合)
 
 ※Windowsの場合はVisualstudioのC++によるデスクトップ開発を事前にインストールしておく必要があります。
 ※Docker、Linux等はGCCがインストールされていれば問題ないはずですが、現在はWindowsのみでの動作確認を行っています。
+
+### 0. 事前準備
+
+Pythonのバージョンは3.11での動作確認を行っています。Pythonのバージョンが異なる場合は動作しない可能性があります。
 
 ### 1. リポジトリのクローン
 
@@ -55,7 +59,14 @@ git clone https://github.com/Kotetsu0000/Histopathological_Sections_Image_Analys
 cd Histopathological_Sections_Image_Analysis
 ```
 
-必要があれば、仮想環境を作成してください。
+必要があれば、仮想環境を作成してください。(以下はWindowsのコマンド例)
+
+```bash
+python -m venv venv
+.\venv\Scripts\activate
+```
+
+Linuxの場合は以下のコマンドを実行してください。
 
 ```bash
 python -m venv venv
@@ -68,6 +79,12 @@ CUDAのインストールはPyTorch2.0以降不要になったため、NVIDIAの
 
 PyTorchのインストール方法は[公式サイト](https://pytorch.org/get-started/locally/)を参照してください。このコードはCUDAを使用することを前提としており、CUDAが使用できない場合はコードの一部を変更する必要があります。
 
+本実験ではPyTorchのバージョンは2.5.1での動作確認を行っています。
+
+```bash
+pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu124
+```
+
 ### 3. その他のライブラリのインストール
 
 その後、以下のコマンドを実行して必要なライブラリをインストールしてください。
@@ -78,7 +95,7 @@ pip install git+https://github.com/Kotetsu0000/VitLib.git git+https://github.com
 
 ### 4. 実験の実行
 
-まず、`config.ini`ファイルを作成し、`experiment.py`を実行してください。[こちら](config/config.ini)に設定例があります。
+まず、`config.ini`ファイルを作成し、`experiment.py`を実行してください。[こちら](config/config.ini)に記載例があります。
 
 ```bash
 python experiment.py --config config.ini
@@ -142,3 +159,15 @@ config.iniの設定は以下の通りです。
 |nuclear_sparse_del_area_max|核の評価の小領域削除面積の最大値(nuclear or bothの場合のみ)|
 |nuclear_sparse_del_area_step|核の評価の小領域削除面積のステップ(nuclear or bothの場合のみ)|
 
+### 5. 評価の実行
+
+実験で使用したものと同じ`config.ini`ファイルを使用して、`evaluation.py`を実行してください。
+
+```bash
+python evaluation.py --config config.ini
+```
+
+> [!IMPORTANT]
+> configオプションを指定しない場合は、すべてデフォルトの設定で実行されます。
+
+プログラムが終了すると、`{{default_path}}/log_membrane/test/all_aggregate.csv`または`{{default_path}}/log_nuclear/test/all_aggregate.csv`に評価結果が保存されます。
