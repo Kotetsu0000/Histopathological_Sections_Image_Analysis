@@ -78,11 +78,14 @@ pip install git+https://github.com/Kotetsu0000/VitLib.git git+https://github.com
 
 ### 4. 実験の実行
 
-まず、`config.ini`ファイルを作成し、`experiment.py`を実行してください。
+まず、`config.ini`ファイルを作成し、`experiment.py`を実行してください。[こちら](config/config.ini)に設定例があります。
 
 ```bash
 python experiment.py --config config.ini
 ```
+
+> [!IMPORTANT]
+> congigオプションを指定しない場合は、すべてデフォルトの設定で実行されます。
 
 #### config.iniの設定
 
