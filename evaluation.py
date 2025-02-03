@@ -786,6 +786,7 @@ class EvaluationAggregation:
                     else:
                         self.logger.warning(f'Not found {val_exp_aggregate_csv_path}. So Test Aggregation is skipped.')
                         return
+                self.aggregate_test_all(f'{membrane_log_eval_folder_path}/test', 'membrane')
                     
         # 細胞核の評価が行われている場合
         if os.path.exists(nuclear_log_eval_folder_path):
@@ -808,6 +809,7 @@ class EvaluationAggregation:
                     else:
                         self.logger.warning(f'Not found {val_exp_aggregate_csv_path}. So Test Aggregation is skipped.')
                         return
+                self.aggregate_test_all(f'{nuclear_log_eval_folder_path}/test', 'nuclear')
                     
     def aggregate_test_exp_num(self, exp_num_path:str, val_exp_aggregate_csv_path:str, subject:str):
         """撮像法の組み合わせ毎の結果を集計する。
