@@ -602,7 +602,7 @@ class Extraction:
             in_channels = sum(self.use_list)
 
         if self.use_Network == 'U-Net':
-            if self.experiment_subject == 'membrane' or self.experiment_subject == 'nucler':
+            if self.experiment_subject == 'membrane' or self.experiment_subject == 'nuclear':
                 self.model = U_Net(in_channels, 1, bilinear=False).to(self.device, non_blocking=True)
             elif self.experiment_subject == 'both':
                 if self.use_other_channel:
@@ -612,7 +612,7 @@ class Extraction:
             else:
                 raise Exception(f'実験対象が不正です。experiment_subject : {self.experiment_subject}')
         elif self.use_Network == 'U-Net++':
-            if self.experiment_subject == 'membrane' or self.experiment_subject == 'nucler':
+            if self.experiment_subject == 'membrane' or self.experiment_subject == 'nuclear':
                 self.model = Nested_U_Net(in_channels, 1, deepsupervision=self.deep_supervision).to(self.device, non_blocking=True)
             elif self.experiment_subject == 'both':
                 if self.use_other_channel:
