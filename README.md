@@ -44,7 +44,8 @@
 ## 環境構築方法(物理マシンに環境構築する場合)
 
 ※Windowsの場合はVisualstudioのC++によるデスクトップ開発を事前にインストールしておく必要があります。
-※Docker、Linux等はGCCがインストールされていれば問題ないはずですが、現在はWindowsのみでの動作確認を行っています。
+※LinuxはGCCがインストールされていれば問題ないはずですが、現在はWindowsのみでの動作確認を行っています。
+※Docker環境での実行方法は下記に記載しています。
 
 ### 0. 事前準備
 
@@ -171,3 +172,74 @@ python evaluation.py --config config.ini
 > configオプションを指定しない場合は、すべてデフォルトの設定で実行されます。
 
 プログラムが終了すると、`{{default_path}}/log_membrane/test/all_aggregate.csv`または`{{default_path}}/log_nuclear/test/all_aggregate.csv`に評価結果が保存されます。
+
+## 環境構築方法(Docker環境)
+
+### 0. 事前準備
+
+Dockerがインストールされていることを前提としています。インストールされていない場合は、[公式サイト](https://docs.docker.com/get-docker/)を参照してください。
+
+ ### 1. リポジトリのクローン
+
+まず、このリポジトリをクローンしてください。
+
+```bash
+git clone https://github.com/Kotetsu0000/Histopathological_Sections_Image_Analysis.git
+cd Histopathological_Sections_Image_Analysis
+```
+
+### 2. Dockerイメージのビルド
+
+次に、Dockerイメージをビルドしてください。
+
+```bash
+docker build ./ -t histopathological_sections_image_analysis
+```
+
+### 3. 実験の実行
+
+`config.ini`ファイルを作成し、以下のコマンドを実行してください。なお、`config.ini`ファイルは物理マシンでの実行方法と同じです。
+
+#### Windowsのコマンドプロンプトの場合
+
+```bash
+docker run -it --rm --gpus all -v %cd%:/app --shm-size=16g histopathological_sections_image_analysis python experiment.py --config config.ini
+```
+
+#### PowerShellの場合(実行未確認)
+
+```bash
+docker run -it --rm --gpus all -v ${PWD}:/app --shm-size=16g histopathological_sections_image_analysis python experiment.py --config config.ini
+```
+
+#### Linuxの場合(実行未確認)
+
+```bash
+docker run -it --rm --gpus all -v $(pwd):/app --shm-size=16g histopathological_sections_image_analysis python experiment.py --config config.ini
+```
+
+> [!IMPORTANT]
+> `config.ini`は`Histopathological_Sections_Image_Analysis`ディレクトリ直下にある前提です。`config`ディレクトリにある場合は、`config/config.ini`のようにパスを指定してください。
+> `config.ini`のパスも相対パスで指定し、`Histopathological_Sections_Image_Analysis`より上のディレクトリを指定しないでください。別の場所に保存したい場合は、`-v`オプションでマウントするディレクトリを変更し、`config.ini`についてはDockerからアクセスできるパスを指定してください。
+
+### 4. 評価の実行
+
+実験で使用したものと同じ`config.ini`ファイルを使用して、以下のコマンドを実行してください。
+
+#### Windowsのコマンドプロンプトの場合
+
+```bash
+docker run -it --rm --gpus all -v %cd%:/app --shm-size=16g histopathological_sections_image_analysis python evaluation.py --config config.ini
+```
+
+#### PowerShellの場合(実行未確認)
+
+```bash
+docker run -it --rm --gpus all -v ${PWD}:/app --shm-size=16g histopathological_sections_image_analysis python evaluation.py --config config.ini
+```
+
+#### Linuxの場合(実行未確認)
+
+```bash
+docker run -it --rm --gpus all -v $(pwd):/app --shm-size=16g histopathological_sections_image_analysis python evaluation.py --config config.ini
+```
