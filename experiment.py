@@ -41,7 +41,7 @@ from VitLib import (
     modify_line_width,
     make_nuclear_evaluate_images,
 )
-from VitLib_PyTorch.Loss import DiceLoss
+from VitLib_PyTorch.Loss import DiceLoss, FMeasureLoss, IoULoss, ReverseIoULoss
 from VitLib_PyTorch.Network import U_Net, Nested_U_Net
 
 from Dataset import Dataset_experiment_both, Dataset_experiment_single
@@ -132,7 +132,7 @@ class Extraction:
         ## 実験全体で固定するパラメータ
         ### 使用するLossの種類(DiceLoss, BCELoss)
         self.use_loss = use_loss
-        assert self.use_loss in ['DiceLoss', 'BCELoss'], f'使用Lossが不正です。use_loss : {self.use_loss}'
+        assert self.use_loss in ['DiceLoss', 'BCELoss', 'FMeasureLoss', 'IoULoss', 'ReverseIoULoss', 'MSELoss'], f'使用Lossが不正です。use_loss : {self.use_loss}'
 
         ### スタートの番号(途中から再開する場合のみ変更)
         self.start_num = start_num
@@ -624,6 +624,7 @@ class Extraction:
         else:
             raise Exception(f'使用ネットワークが不正です。use_Network : {self.use_Network}')
         
+        # if Usable GPU is more than 1, use DataParallel
         if self.gpu_n > 1:
             self.model = torch.nn.DataParallel(self.model, device_ids=self.use_device)
 
@@ -632,6 +633,17 @@ class Extraction:
             self.criterion = DiceLoss()
         elif self.use_loss == 'BCELoss':
             self.criterion = BCELoss()
+        elif self.use_loss == 'FMeasureLoss':
+            self.criterion = FMeasureLoss
+        elif self.use_loss == 'IoULoss':
+            self.criterion = IoULoss()
+        elif self.use_loss == 'ReverseIoULoss':
+            self.criterion = ReverseIoULoss()
+        elif self.use_loss == 'MSELoss':
+            self.criterion = nn.MSELoss()
+        else:
+            raise Exception(f'使用Lossが不正です。use_loss : {self.use_loss}')
+        
 
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
 
